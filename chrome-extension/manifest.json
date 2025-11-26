@@ -1,0 +1,31 @@
+{
+    "manifest_version": 3,
+    "name": "Harbinger Auto-Login",
+    "version": "1.0",
+    "description": "Automatically detects and clicks 'Sign in with Google' buttons.",
+    "permissions": [
+        "activeTab",
+        "storage",
+        "scripting"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "action": {
+        "default_popup": "popup.html"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "all_frames": true,
+            "js": [
+                "overlay.js",
+                "assistant-ui.js",
+                "automation.js",
+                "content.js"
+            ]
+        }
+    ]
+}

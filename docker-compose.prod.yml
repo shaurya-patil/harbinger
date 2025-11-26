@@ -1,0 +1,253 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: harbinger
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - harbinger-network
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - harbinger-network
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=harbinger
+      - DB_USER=postgres
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - LOG_LEVEL=info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+      replicas: 2
+    healthcheck:
+      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1})" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - harbinger-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  orchestrator:
+    build:
+      context: ./orchestrator
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - harbinger-network
+
+  # Agents
+  calendar-agent:
+    build:
+      context: ./agents/calendar-agent-node
+      dockerfile: Dockerfile
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./credentials.json:/app/credentials.json:ro
+      - ./agents/calendar-agent-node/token.json:/app/token.json
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+    networks:
+      - harbinger-network
+
+  gmail-agent:
+    build:
+      context: ./agents/gmail-agent-node
+      dockerfile: Dockerfile
+    ports:
+      - "50052:50052"
+    environment:
+      - GMAIL_USER=${GMAIL_USER}
+      - GMAIL_PASS=${GMAIL_PASS}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+    networks:
+      - harbinger-network
+
+  browser-agent:
+    build:
+      context: ./agents/browser-agent-node
+      dockerfile: Dockerfile
+    ports:
+      - "50053:50053"
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - harbinger-network
+
+  os-agent:
+    build:
+      context: ./agents/os-agent-node
+      dockerfile: Dockerfile
+    ports:
+      - "50054:50054"
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+    networks:
+      - harbinger-network
+
+  humanizer-agent:
+    build:
+      context: ./agents/humanizer-agent-node
+      dockerfile: Dockerfile
+    ports:
+      - "50055:50055"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+    networks:
+      - harbinger-network
+
+  memory-agent:
+    build:
+      context: ./agents/memory-agent-node
+      dockerfile: Dockerfile
+    ports:
+      - "50066:50066"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=harbinger
+      - DB_USER=postgres
+      - DB_PASSWORD=${DB_PASSWORD}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+    networks:
+      - harbinger-network
+
+  excel-agent:
+    build:
+      context: ./agents/excel-agent-node
+      dockerfile: Dockerfile
+    ports:
+      - "50067:50067"
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+    networks:
+      - harbinger-network
+
+  rag-agent:
+    build:
+      context: ./agents/rag-agent-node
+      dockerfile: Dockerfile
+    ports:
+      - "50068:50068"
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - harbinger-network
+
+networks:
+  harbinger-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local

@@ -1,0 +1,33 @@
+syntax = "proto3";
+package jarvis;
+
+option go_package = "github.com/shaurya-patil/harbinger/libs/proto";
+
+message Task {
+  string id = 1;
+  string type = 2; // e.g., "calendar.create_event"
+  map<string,string> metadata = 3;
+  bytes payload = 4; // json blob or structured proto
+  repeated string depends_on = 5;
+  int32 retry_count = 6;
+}
+
+message TaskStatus {
+  string id = 1;
+  string status = 2; // queued/running/success/fail
+  string result_uri = 3; // S3/MinIO path
+  string error_message = 4;
+  string result_data = 5; // Actual result data (JSON string)
+}
+
+service Agent {
+  rpc ExecuteTask(Task) returns (TaskStatus);
+  rpc HealthCheck(Empty) returns (HealthCheckResponse);
+}
+
+message Empty {}
+
+message HealthCheckResponse {
+  string status = 1;
+  repeated string capabilities = 2;
+}

@@ -1,0 +1,1 @@
+{"code":"def main():\n    \"\"\"Prints 'Hello World' to the console.\"\"\"\n    print(\"Hello World\")\n\nif __name__ == \"__main__\":\n    main()"}

@@ -1,0 +1,153 @@
+# Prometheus Configuration for Harbinger AI System
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'harbinger-prod'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "alerts/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # API Gateway
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Orchestrator
+  - job_name: 'orchestrator'
+    static_configs:
+      - targets: ['orchestrator:50050']
+    metrics_path: '/metrics'
+
+  # Calendar Agent
+  - job_name: 'calendar-agent'
+    static_configs:
+      - targets: ['calendar-agent:50051']
+    metrics_path: '/metrics'
+
+  # Gmail Agent
+  - job_name: 'gmail-agent'
+    static_configs:
+      - targets: ['gmail-agent:50052']
+    metrics_path: '/metrics'
+
+  # Browser Agent
+  - job_name: 'browser-agent'
+    static_configs:
+      - targets: ['browser-agent:50053']
+    metrics_path: '/metrics'
+
+  # OS Agent
+  - job_name: 'os-agent'
+    static_configs:
+      - targets: ['os-agent:50054']
+    metrics_path: '/metrics'
+
+  # Humanizer Agent
+  - job_name: 'humanizer-agent'
+    static_configs:
+      - targets: ['humanizer-agent:50055']
+    metrics_path: '/metrics'
+
+  # Coding Agents
+  - job_name: 'coding-interpreter-agent'
+    static_configs:
+      - targets: ['coding-interpreter-agent:50056']
+    metrics_path: '/metrics'
+
+  - job_name: 'coding-planner-agent'
+    static_configs:
+      - targets: ['coding-planner-agent:50057']
+    metrics_path: '/metrics'
+
+  - job_name: 'coding-codegen-agent'
+    static_configs:
+      - targets: ['coding-codegen-agent:50058']
+    metrics_path: '/metrics'
+
+  - job_name: 'coding-execution-agent'
+    static_configs:
+      - targets: ['coding-execution-agent:50059']
+    metrics_path: '/metrics'
+
+  - job_name: 'coding-debugger-agent'
+    static_configs:
+      - targets: ['coding-debugger-agent:50060']
+    metrics_path: '/metrics'
+
+  - job_name: 'coding-qa-agent'
+    static_configs:
+      - targets: ['coding-qa-agent:50061']
+    metrics_path: '/metrics'
+
+  - job_name: 'coding-reviewer-agent'
+    static_configs:
+      - targets: ['coding-reviewer-agent:50062']
+    metrics_path: '/metrics'
+
+  - job_name: 'coding-dependency-agent'
+    static_configs:
+      - targets: ['coding-dependency-agent:50063']
+    metrics_path: '/metrics'
+
+  - job_name: 'coding-docs-agent'
+    static_configs:
+      - targets: ['coding-docs-agent:50064']
+    metrics_path: '/metrics'
+
+  - job_name: 'coding-research-agent'
+    static_configs:
+      - targets: ['coding-research-agent:50065']
+    metrics_path: '/metrics'
+
+  # Memory Agent
+  - job_name: 'memory-agent'
+    static_configs:
+      - targets: ['memory-agent:50066']
+    metrics_path: '/metrics'
+
+  # Excel Agent
+  - job_name: 'excel-agent'
+    static_configs:
+      - targets: ['excel-agent:50067']
+    metrics_path: '/metrics'
+
+  # RAG Agent
+  - job_name: 'rag-agent'
+    static_configs:
+      - targets: ['rag-agent:50068']
+    metrics_path: '/metrics'
+
+  # PostgreSQL
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # Node Exporter (system metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']

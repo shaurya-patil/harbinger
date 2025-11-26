@@ -1,0 +1,192 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: harbinger-postgres
+    environment:
+      POSTGRES_DB: harbinger
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/02-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - harbinger-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: harbinger-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - harbinger-network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: harbinger-api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=harbinger
+      - DB_USER=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-changeme}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-change-this-secret-in-production}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - harbinger-network
+
+  # Orchestrator
+  orchestrator:
+    build:
+      context: ./orchestrator
+      dockerfile: Dockerfile
+    container_name: harbinger-orchestrator
+    environment:
+      - NODE_ENV=production
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    restart: unless-stopped
+    networks:
+      - harbinger-network
+
+  # Calendar Agent
+  calendar-agent:
+    build:
+      context: ./agents/calendar-agent-node
+      dockerfile: ../Dockerfile.template
+    container_name: harbinger-calendar-agent
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./credentials.json:/app/credentials.json:ro
+      - ./agents/calendar-agent-node/token.json:/app/token.json
+    restart: unless-stopped
+    networks:
+      - harbinger-network
+
+  # Gmail Agent
+  gmail-agent:
+    build:
+      context: ./agents/gmail-agent-node
+      dockerfile: ../Dockerfile.template
+    container_name: harbinger-gmail-agent
+    ports:
+      - "50052:50052"
+    environment:
+      - GMAIL_USER=${GMAIL_USER}
+      - GMAIL_PASS=${GMAIL_PASS}
+    restart: unless-stopped
+    networks:
+      - harbinger-network
+
+  # Browser Agent
+  browser-agent:
+    build:
+      context: ./agents/browser-agent-node
+      dockerfile: ../Dockerfile.template
+    container_name: harbinger-browser-agent
+    ports:
+      - "50053:50053"
+    restart: unless-stopped
+    networks:
+      - harbinger-network
+
+  # OS Agent
+  os-agent:
+    build:
+      context: ./agents/os-agent-node
+      dockerfile: ../Dockerfile.template
+    container_name: harbinger-os-agent
+    ports:
+      - "50054:50054"
+    restart: unless-stopped
+    networks:
+      - harbinger-network
+
+  # Humanizer Agent
+  humanizer-agent:
+    build:
+      context: ./agents/humanizer-agent-node
+      dockerfile: ../Dockerfile.template
+    container_name: harbinger-humanizer-agent
+    ports:
+      - "50055:50055"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    restart: unless-stopped
+    networks:
+      - harbinger-network
+
+  # Memory Agent
+  memory-agent:
+    build:
+      context: ./agents/memory-agent-node
+      dockerfile: ../Dockerfile.template
+    container_name: harbinger-memory-agent
+    ports:
+      - "50066:50066"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=harbinger
+      - DB_USER=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-changeme}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - harbinger-network
+
+  # Excel Agent
+  excel-agent:
+    build:
+      context: ./agents/excel-agent-node
+      dockerfile: ../Dockerfile.template
+    container_name: harbinger-excel-agent
+    ports:
+      - "50067:50067"
+    restart: unless-stopped
+    networks:
+      - harbinger-network
+
+  # Add other agents similarly...
+  # For brevity, showing pattern for remaining agents
+
+networks:
+  harbinger-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
