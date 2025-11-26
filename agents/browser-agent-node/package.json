@@ -1,0 +1,18 @@
+{
+    "name": "browser-agent-node",
+    "version": "1.0.0",
+    "description": "Browser Agent for Jarvis using Playwright",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "@grpc/grpc-js": "^1.10.0",
+        "@grpc/proto-loader": "^0.7.10",
+        "@mozilla/readability": "^0.5.0",
+        "dotenv": "^16.4.1",
+        "jsdom": "^24.0.0",
+        "playwright": "^1.41.2",
+        "turndown": "^7.2.2"
+    }
+}

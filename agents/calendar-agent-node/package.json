@@ -1,0 +1,14 @@
+{
+    "name": "calendar-agent-node",
+    "version": "1.0.0",
+    "description": "Node.js implementation of Calendar Agent",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "@grpc/grpc-js": "^1.9.0",
+        "@grpc/proto-loader": "^0.7.0",
+        "googleapis": "^166.0.0"
+    }
+}
