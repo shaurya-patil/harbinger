@@ -16,6 +16,9 @@
 *   **Unified API Gateway**: A single entry point for external applications to interact with the agent mesh.
 *   **Desktop Integration**: Includes an Electron-based desktop app and Chrome Extension for deep system and browser integration.
 
+> [!NOTE]
+> The browser extension and fully functional desktop app are currently under development.
+
 ##  Architecture
 
 Harbinger follows a microservices pattern:
